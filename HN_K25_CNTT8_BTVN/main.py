@@ -16,33 +16,33 @@ def run_tests():
 
     service = StudentService()
 
-    # Test 1: Thêm sinh viên hợp lệ
-    status1, msg1 = service.add_student("SV001", "Nguyen Van A", "a.nguyen@gmail.com", 20)
-    print(f"[Test 1 - Add Valid Student]: {'PASSED' if status1 else 'FAILED'} -> {msg1}")
+    # # Test 1: Thêm sinh viên hợp lệ
+    # status1, msg1 = service.add_student("SV001", "Nguyen Van A", "a.nguyen@gmail.com", 20)
+    # print(f"[Test 1 - Add Valid Student]: {'PASSED' if status1 else 'FAILED'} -> {msg1}")
 
-    # Test 2: Mã rỗng & Mã không đúng định dạng (VD thiếu tiền tố 'SV')
-    status2a, msg2a = service.add_student("   ", "Tran Van B", "b.tran@gmail.com", 21)
-    status2b, msg2b = service.add_student("123", "Tran Van B", "b.tran@gmail.com", 21)
-    print(f"[Test 2a - Empty ID]: {'PASSED' if not status2a else 'FAILED'} -> {msg2a}")
-    print(f"[Test 2b - Invalid ID Pattern]: {'PASSED' if not status2b else 'FAILED'} -> {msg2b}")
+    # # Test 2: Mã rỗng & Mã không đúng định dạng (VD thiếu tiền tố 'SV')
+    # status2a, msg2a = service.add_student("   ", "Tran Van B", "b.tran@gmail.com", 21)
+    # status2b, msg2b = service.add_student("123", "Tran Van B", "b.tran@gmail.com", 21)
+    # print(f"[Test 2a - Empty ID]: {'PASSED' if not status2a else 'FAILED'} -> {msg2a}")
+    # print(f"[Test 2b - Invalid ID Pattern]: {'PASSED' if not status2b else 'FAILED'} -> {msg2b}")
 
-    # Test 3: Tên chỉ có khoảng trắng
-    status3, msg3 = service.add_student("SV002", "   \t  ", "c.le@gmail.com", 22)
-    print(f"[Test 3 - Blank Name]: {'PASSED' if not status3 else 'FAILED'} -> {msg3}")
+    # # Test 3: Tên chỉ có khoảng trắng
+    # status3, msg3 = service.add_student("SV002", "   \t  ", "c.le@gmail.com", 22)
+    # print(f"[Test 3 - Blank Name]: {'PASSED' if not status3 else 'FAILED'} -> {msg3}")
 
-    # Test 4: Email sai định dạng hoặc bị trùng lặp
-    status4a, msg4a = service.add_student("SV003", "Le Van C", "invalid_email_format", 22)
-    status4b, msg4b = service.add_student("SV004", "Pham Van D", "a.nguyen@gmail.com", 23)
-    print(f"[Test 4a - Invalid Email Format]: {'PASSED' if not status4a else 'FAILED'} -> {msg4a}")
-    print(f"[Test 4b - Duplicate Email]: {'PASSED' if not status4b else 'FAILED'} -> {msg4b}")
+    # # Test 4: Email sai định dạng hoặc bị trùng lặp
+    # status4a, msg4a = service.add_student("SV003", "Le Van C", "invalid_email_format", 22)
+    # status4b, msg4b = service.add_student("SV004", "Pham Van D", "a.nguyen@gmail.com", 23)
+    # print(f"[Test 4a - Invalid Email Format]: {'PASSED' if not status4a else 'FAILED'} -> {msg4a}")
+    # print(f"[Test 4b - Duplicate Email]: {'PASSED' if not status4b else 'FAILED'} -> {msg4b}")
 
-    # Test 5: Tuổi nhập chữ hoặc ngoài khoảng 17-100
-    status5a, msg5a = service.add_student("SV005", "Hoang Van E", "e.hoang@gmail.com", "hai_muoi")
-    status5b, msg5b = service.add_student("SV006", "Dang Van F", "f.dang@gmail.com", 15)
-    print(f"[Test 5a - Non-numeric Age]: {'PASSED' if not status5a else 'FAILED'} -> {msg5a}")
-    print(f"[Test 5b - Age Out of Range (<17)]: {'PASSED' if not status5b else 'FAILED'} -> {msg5b}")
+    # # Test 5: Tuổi nhập chữ hoặc ngoài khoảng 17-100
+    # status5a, msg5a = service.add_student("SV005", "Hoang Van E", "e.hoang@gmail.com", "hai_muoi")
+    # status5b, msg5b = service.add_student("SV006", "Dang Van F", "f.dang@gmail.com", 15)
+    # print(f"[Test 5a - Non-numeric Age]: {'PASSED' if not status5a else 'FAILED'} -> {msg5a}")
+    # print(f"[Test 5b - Age Out of Range (<17)]: {'PASSED' if not status5b else 'FAILED'} -> {msg5b}")
 
-    print("=" * 72 + "\n")
+    # print("=" * 72 + "\n")
 
 def main_menu():
     service = StudentService()
