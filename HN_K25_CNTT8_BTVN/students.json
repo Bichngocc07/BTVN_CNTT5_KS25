@@ -1,0 +1,14 @@
+{
+    "SV001": {
+        "student_id": "SV001",
+        "name": "Nguyen Van A",
+        "email": "a.nguyen@gmail.com",
+        "age": 20
+    },
+    "SV002": {
+        "student_id": "SV002",
+        "name": "Tran Thi B",
+        "email": "b.tran@gmail.com",
+        "age": 22
+    }
+}
