@@ -6,7 +6,6 @@ def is_valid_student_id(student_id: str, existing_ids: set = None) -> tuple[bool
     if not student_id:
         return False, "Mã sinh viên không được để rỗng!"
     
-    # Quy tắc Validation: Mã phải bắt đầu bằng SV và theo sau là các chữ số
     pattern = r"^SV\d+$"
     if not re.match(pattern, student_id):
         return False, "Mã sinh viên phải có định dạng 'SV' + chữ số (Ví dụ: SV001, SV002)!"
