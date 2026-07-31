@@ -35,11 +35,11 @@ def is_valid_email(email: str, existing_emails: set = None) -> tuple[bool, str]:
     return True, ""
 
 def is_valid_age(age_input) -> tuple[bool, str, int | None]:
-    """Kiểm tra tuổi: Phải là số nguyên từ 17 đến 100."""
+    """Kiểm tra tuổi: Phải là số nguyên từ 18 đến 60."""
     try:
         age = int(age_input)
-        if age < 17 or age > 100:
-            return False, "Tuổi phải là số nguyên từ 17 đến 100!", None
+        if age < 18 or age > 60:
+            return False, "Tuổi phải là số nguyên từ 18 đến 60!", None
         return True, "", age
     except (ValueError, TypeError):
         return False, "Tuổi phải là một số nguyên hợp lệ!", None
