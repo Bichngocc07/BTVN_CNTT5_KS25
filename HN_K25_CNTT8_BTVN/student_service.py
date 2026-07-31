@@ -1,15 +1,4 @@
-from validators import is_valid_student_id, is_valid_name, is_valid_email, is_valid_age
-
-class StudentService:
-    def __init__(self):
-        # Sử dụng Dictionary với Key là student_id để tối ưu tốc độ tìm kiếm O(1)
-        self.students = {}
-
-    def get_existing_emails(self) -> set:
-        return {student['email'] for student in self.students.values()}
-
-    def add_student(self, student_id: str, name: str, email: str, age) -> tuple[bool, str]:
-        student_id = student_id.strip()import json
+import json
 import os
 from validators import is_valid_name, is_valid_email, is_valid_age
 
@@ -51,7 +40,7 @@ class StudentService:
         """Lấy danh sách email hiện có."""
         return {
             s['email'] for s in self.students.values() 
-            if ignore_id is None or s['student_id'] != ignore_id
+            if ignore_id is None or s.get('student_id') != ignore_id
         }
 
     def add_student_auto_id(self, name: str, email: str, age) -> tuple[bool, str, str]:
@@ -59,26 +48,25 @@ class StudentService:
         name = name.strip()
         email = email.strip()
 
-        # Validate Name
         valid_name, msg_name = is_valid_name(name)
         if not valid_name: return False, msg_name, ""
 
-        # Validate Email
         valid_email, msg_email = is_valid_email(email, self.get_existing_emails())
         if not valid_email: return False, msg_email, ""
 
-        # Validate Age
         valid_age, msg_age, parsed_age = is_valid_age(age)
         if not valid_age: return False, msg_age, ""
 
-        # Tự động sinh mã mới
         auto_id = self.generate_next_id()
 
         self.students[auto_id] = {
             "student_id": auto_id,
+            "student_code": auto_id,
             "name": name,
+            "full_name": name,
             "email": email,
-            "age": parsed_age
+            "age": parsed_age,
+            "is_active": True
         }
         self.save_data()
         return True, f"Thêm thành công sinh viên: {name} với mã tự động [{auto_id}]", auto_id
@@ -96,6 +84,7 @@ class StudentService:
             valid_name, msg_name = is_valid_name(name)
             if not valid_name: return False, msg_name
             student['name'] = name
+            student['full_name'] = name
 
         if email is not None:
             email = email.strip()
@@ -115,48 +104,11 @@ class StudentService:
         """Xóa sinh viên khỏi hệ thống."""
         student_id = student_id.strip()
         if student_id in self.students:
-            name = self.students[student_id]['name']
+            name = self.students[student_id].get('name', '')
             del self.students[student_id]
             self.save_data()
             return True, f"Đã xóa sinh viên {name} ({student_id})"
         return False, f"Không tìm thấy sinh viên có mã '{student_id}'"
-
-    def get_all_students(self) -> list:
-        return list(self.students.values())
-
-    def find_by_id(self, student_id: str) -> dict | None:
-        return self.students.get(student_id.strip())
-
-    def filter_by_age(self, min_age: int, max_age: int) -> list:
-        return [s for s in self.students.values() if min_age <= s['age'] <= max_age]
-        name = name.strip()
-        email = email.strip()
-
-        # Validate từng thuộc tính
-        valid_id, msg_id = is_valid_student_id(student_id, set(self.students.keys()))
-        if not valid_id:
-            return False, msg_id
-
-        valid_name, msg_name = is_valid_name(name)
-        if not valid_name:
-            return False, msg_name
-
-        valid_email, msg_email = is_valid_email(email, self.get_existing_emails())
-        if not valid_email:
-            return False, msg_email
-
-        valid_age, msg_age, parsed_age = is_valid_age(age)
-        if not valid_age:
-            return False, msg_age
-
-        # Thêm vào dictionary lưu trữ
-        self.students[student_id] = {
-            "student_id": student_id,
-            "name": name,
-            "email": email,
-            "age": parsed_age
-        }
-        return True, f"Thêm thành công sinh viên: {name} ({student_id})"
 
     def get_all_students(self) -> list:
         return list(self.students.values())
