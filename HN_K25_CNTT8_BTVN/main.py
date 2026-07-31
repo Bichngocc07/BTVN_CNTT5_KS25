@@ -7,7 +7,9 @@ def print_student_table(students: list):
     print(f"  {'Mã SV':<10} | {'Họ và tên':<22} | {'Email':<25} | {'Tuổi':<5}")
     print("  " + "-" * 70)
     for s in students:
-        print(f"  {s['student_id']:<10} | {s['name']:<22} | {s['email']:<25} | {s['age']:<5}")
+        name = s.get('full_name') or s.get('name')
+        s_id = s.get('student_code') or s.get('student_id')
+        print(f"  {s_id:<10} | {name:<22} | {s['email']:<25} | {s['age']:<5}")
 
 def main_menu():
     service = StudentService("students.json")
@@ -35,7 +37,6 @@ def main_menu():
             email = input("Email: ")
             age = input("Tuổi: ")
             
-            # Gọi hàm thêm tự động sinh mã
             success, msg, generated_id = service.add_student_auto_id(name, email, age)
             print(f"[=>] {msg}")
 
@@ -62,8 +63,9 @@ def main_menu():
             if not student:
                 print(f"[!] Không tìm thấy sinh viên có mã '{s_id}'")
             else:
+                curr_name = student.get('full_name') or student.get('name')
                 print(f"--- Đang sửa sinh viên {s_id} (Nhấn Enter để giữ nguyên) ---")
-                new_name = input(f"Họ tên mới [{student['name']}]: ").strip()
+                new_name = input(f"Họ tên mới [{curr_name}]: ").strip()
                 new_email = input(f"Email mới [{student['email']}]: ").strip()
                 new_age = input(f"Tuổi mới [{student['age']}]: ").strip()
 
