@@ -23,7 +23,7 @@ class StudentService:
             json.dump(self.students, f, ensure_ascii=False, indent=4)
 
     def generate_next_id(self) -> str:
-        """Tự động tìm và tạo mã SV tiếp theo dạng SV001, SV002,..."""
+        """Tự động tạo mã SV tiếp theo dạng SV001, SV002,..."""
         if not self.students:
             return "SV001"
         
@@ -72,7 +72,7 @@ class StudentService:
         return True, f"Thêm thành công sinh viên: {name} với mã tự động [{auto_id}]", auto_id
 
     def update_student(self, student_id: str, name: str = None, email: str = None, age = None) -> tuple[bool, str]:
-        """Sửa thông tin sinh viên đã tồn tại."""
+        """Sửa thông tin sinh viên."""
         student_id = student_id.strip()
         if student_id not in self.students:
             return False, f"Không tìm thấy sinh viên có mã '{student_id}'"
@@ -101,7 +101,7 @@ class StudentService:
         return True, f"Cập nhật thành công thông tin cho sinh viên {student_id}"
 
     def delete_student(self, student_id: str) -> tuple[bool, str]:
-        """Xóa sinh viên khỏi hệ thống."""
+        """Xóa sinh viên khỏi file JSON."""
         student_id = student_id.strip()
         if student_id in self.students:
             name = self.students[student_id].get('name', '')
