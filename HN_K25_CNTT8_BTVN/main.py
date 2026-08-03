@@ -14,7 +14,6 @@ def print_student_table(students: list):
 def main_menu():
     service = StudentService("students.json")
     
-    # Khởi tạo dữ liệu mẫu nếu file đang trống
     if not service.get_all_students():
         service.add_student_auto_id("Nguyen Van A", "a.nguyen@gmail.com", 20)
         service.add_student_auto_id("Tran Thi B", "b.tran@gmail.com", 22)
