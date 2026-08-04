@@ -2,23 +2,117 @@ from fastapi import FastAPI, HTTPException, status, Depends
 from typing import List
 from sqlalchemy.orm import Session
 
-from schemas import (
-    StudentCreate, StudentUpdatePUT, StudentUpdatePATCH, StudentResponse,
-    StudentMySQLResponse
-)
 import models
 from database import engine, get_db
+from schemas import (
+    StudentMySQLCreate, StudentMySQLResponse,
+    StudentCreate, StudentUpdatePUT, StudentUpdatePATCH, StudentResponse
+)
 
-# Tạo bảng trong CSDL MySQL nếu chưa có
+# Tự động tạo bảng trong CSDL MySQL nếu chưa có
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Student Management API",
-    description="API Quản lý sinh viên (Kết hợp In-Memory & MySQL SQLAlchemy)",
+    description="API Quản lý sinh viên kết nối CSDL MySQL qua SQLAlchemy",
     version="1.0.0"
 )
 
-# CSDL Giả lập In-Memory
+# ==========================================================
+# 1. CÁC API CSDL MYSQL (POST / GET)
+# ==========================================================
+
+@app.post(
+    "/db/students", 
+    response_model=StudentMySQLResponse, 
+    status_code=status.HTTP_201_CREATED, 
+    summary="[MySQL] Thêm sinh viên mới"
+)
+def create_mysql_student(
+    student_in: StudentMySQLCreate, 
+    db: Session = Depends(get_db)
+):
+    code = student_in.student_code.strip()
+    email = str(student_in.email).strip()
+
+    # Chặn trùng Mã sinh viên
+    existing_code = db.query(models.StudentModel).filter(
+        models.StudentModel.student_code == code
+    ).first()
+    if existing_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Mã sinh viên '{code}' đã tồn tại trong CSDL!"
+        )
+
+    # Chặn trùng Email
+    existing_email = db.query(models.StudentModel).filter(
+        models.StudentModel.email == email
+    ).first()
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Email '{email}' đã tồn tại trong CSDL!"
+        )
+
+    # Khởi tạo Instance ORM Model
+    new_student = models.StudentModel(
+        student_code=code,
+        student_name=student_in.student_name.strip(),
+        email=email,
+        password=student_in.password,
+        phone_number=student_in.phone_number,
+        age=student_in.age,
+        is_active=True
+    )
+
+    # Quy trình lưu CSDL chuẩn SQLAlchemy: add -> commit -> refresh
+    db.add(new_student)
+    db.commit()
+    db.refresh(new_student)
+
+    return new_student
+
+
+@app.get(
+    "/db/students", 
+    response_model=List[StudentMySQLResponse], 
+    status_code=status.HTTP_200_OK, 
+    summary="[MySQL] Lấy danh sách tất cả sinh viên"
+)
+def get_all_mysql_students(db: Session = Depends(get_db)):
+    students = db.query(models.StudentModel).all()
+    return students
+
+
+@app.get(
+    "/db/students/{student_id}", 
+    response_model=StudentMySQLResponse, 
+    status_code=status.HTTP_200_OK, 
+    summary="[MySQL] Lấy chi tiết sinh viên theo ID"
+)
+def get_mysql_student_by_id(
+    student_id: int, 
+    db: Session = Depends(get_db)
+):
+    student = db.query(models.StudentModel).filter(
+        models.StudentModel.id == student_id
+    ).first()
+
+    # Trả về 404 khi không tìm thấy sinh viên
+    if not student:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Không tìm thấy sinh viên có ID = {student_id} trong CSDL!"
+        )
+
+    return student
+
+
+# ==========================================================
+# 2. CÁC API IN-MEMORY / LIST DỮ LIỆU GIẢ LẬP (MÃ CŨ)
+# ==========================================================
+
 db_students: List[dict] = [
     {
         "student_code": "SV001",
@@ -42,16 +136,11 @@ def find_student_index(student_id: str) -> int:
             return index
     return -1
 
-
-# ==========================================
-# 1. API IN-MEMORY / LIST ENDPOINTS
-# ==========================================
-
-@app.get("/students", response_model=List[StudentResponse], status_code=status.HTTP_200_OK, summary="[In-Memory] Lấy danh sách tất cả sinh viên")
+@app.get("/students", response_model=List[StudentResponse], status_code=status.HTTP_200_OK)
 def get_all_students():
     return db_students
 
-@app.get("/students/{student_id}", response_model=StudentResponse, status_code=status.HTTP_200_OK, summary="[In-Memory] Lấy chi tiết sinh viên theo mã")
+@app.get("/students/{student_id}", response_model=StudentResponse, status_code=status.HTTP_200_OK)
 def get_student_by_id(student_id: str):
     idx = find_student_index(student_id)
     if idx == -1:
@@ -61,7 +150,7 @@ def get_student_by_id(student_id: str):
         )
     return db_students[idx]
 
-@app.post("/students", response_model=StudentResponse, status_code=status.HTTP_201_CREATED, summary="[In-Memory] Thêm sinh viên mới")
+@app.post("/students", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 def create_student(student: StudentCreate):
     code = student.student_code.strip()
     email = str(student.email).strip()
@@ -69,13 +158,13 @@ def create_student(student: StudentCreate):
     if find_student_index(code) != -1:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Mã sinh viên '{code}' đã tồn tại trong hệ thống!"
+            detail=f"Mã sinh viên '{code}' đã tồn tại!"
         )
 
     if any(s["email"] == email for s in db_students):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Email '{email}' đã tồn tại trong hệ thống!"
+            detail=f"Email '{email}' đã tồn tại!"
         )
 
     new_student = student.model_dump()
@@ -84,13 +173,13 @@ def create_student(student: StudentCreate):
     db_students.append(new_student)
     return new_student
 
-@app.put("/students/{student_id}", response_model=StudentResponse, status_code=status.HTTP_200_OK, summary="[In-Memory] Cập nhật PUT")
+@app.put("/students/{student_id}", response_model=StudentResponse, status_code=status.HTTP_200_OK)
 def update_student_put(student_id: str, student_data: StudentUpdatePUT):
     idx = find_student_index(student_id)
     if idx == -1:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy sinh viên có mã '{student_id}' để cập nhật!"
+            detail=f"Không tìm thấy sinh viên có mã '{student_id}'"
         )
 
     email = str(student_data.email).strip()
@@ -98,7 +187,7 @@ def update_student_put(student_id: str, student_data: StudentUpdatePUT):
         if i != idx and s["email"] == email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Email '{email}' đã được sử dụng bởi sinh viên khác!"
+                detail=f"Email '{email}' đã được sử dụng!"
             )
 
     updated_item = {
@@ -111,13 +200,13 @@ def update_student_put(student_id: str, student_data: StudentUpdatePUT):
     db_students[idx] = updated_item
     return updated_item
 
-@app.patch("/students/{student_id}", response_model=StudentResponse, status_code=status.HTTP_200_OK, summary="[In-Memory] Cập nhật PATCH")
+@app.patch("/students/{student_id}", response_model=StudentResponse, status_code=status.HTTP_200_OK)
 def update_student_patch(student_id: str, student_data: StudentUpdatePATCH):
     idx = find_student_index(student_id)
     if idx == -1:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy sinh viên có mã '{student_id}' để cập nhật!"
+            detail=f"Không tìm thấy sinh viên có mã '{student_id}'"
         )
 
     current_student = db_students[idx]
@@ -129,20 +218,20 @@ def update_student_patch(student_id: str, student_data: StudentUpdatePATCH):
             if i != idx and s["email"] == new_email:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Email '{new_email}' đã được sử dụng bởi sinh viên khác!"
+                    detail=f"Email '{new_email}' đã được sử dụng!"
                 )
         update_dict["email"] = new_email
 
     current_student.update(update_dict)
     return current_student
 
-@app.delete("/students/{student_id}", status_code=status.HTTP_200_OK, summary="[In-Memory] Xóa sinh viên")
+@app.delete("/students/{student_id}", status_code=status.HTTP_200_OK)
 def delete_student(student_id: str):
     idx = find_student_index(student_id)
     if idx == -1:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy sinh viên có mã '{student_id}' để xóa!"
+            detail=f"Không tìm thấy sinh viên có mã '{student_id}'"
         )
 
     deleted_student = db_students.pop(idx)
@@ -150,23 +239,3 @@ def delete_student(student_id: str):
         "message": f"Đã xóa thành công sinh viên '{deleted_student['full_name']}' ({student_id})",
         "student_code": student_id
     }
-
-
-# ==========================================
-# 2. MYSQL & SQLALCHEMY ENDPOINTS
-# ==========================================
-
-@app.get("/db/students", response_model=List[StudentMySQLResponse], status_code=status.HTTP_200_OK, summary="[MySQL] Lấy danh sách tất cả sinh viên từ DB")
-def get_all_mysql_students(db: Session = Depends(get_db)):
-    students = db.query(models.StudentModel).all()
-    return students
-
-@app.get("/db/students/{student_id}", response_model=StudentMySQLResponse, status_code=status.HTTP_200_OK, summary="[MySQL] Lấy chi tiết sinh viên theo ID")
-def get_mysql_student_by_id(student_id: int, db: Session = Depends(get_db)):
-    student = db.query(models.StudentModel).filter(models.StudentModel.id == student_id).first()
-    if not student:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Không tìm thấy sinh viên có ID = {student_id} trong CSDL!"
-        )
-    return student
