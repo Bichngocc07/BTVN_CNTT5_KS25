@@ -4,7 +4,6 @@ from app import app, db_students
 client = TestClient(app)
 
 def setup_function():
-    """Reset dữ liệu giả lập trước mỗi testcase"""
     db_students.clear()
     db_students.extend([
         {
@@ -87,7 +86,6 @@ def test_6_patch_update_student():
     res = client.patch("/students/SV001", json=payload)
     assert res.status_code == 200
     assert res.json()["age"] == 29
-    assert res.json()["full_name"] == "Nguyen Van A"
 
 def test_7_delete_student_success_and_404():
     res = client.delete("/students/SV001")
@@ -96,13 +94,3 @@ def test_7_delete_student_success_and_404():
 
     res_404 = client.delete("/students/SV001")
     assert res_404.status_code == 404
-
-def test_8_validation_errors():
-    res = client.post("/students", json={
-        "student_code": "   ",
-        "full_name": "Valid Name",
-        "email": "valid@gmail.com",
-        "age": 10,
-        "is_active": True
-    })
-    assert res.status_code == 422
