@@ -9,7 +9,6 @@ class StudentService:
         self.load_data()
 
     def load_data(self):
-        """Tải dữ liệu từ file JSON nếu file tồn tại."""
         if os.path.exists(self.storage_file):
             try:
                 with open(self.storage_file, "r", encoding="utf-8") as f:
@@ -18,12 +17,10 @@ class StudentService:
                 self.students = {}
 
     def save_data(self):
-        """Lưu dữ liệu sinh viên vào file JSON."""
         with open(self.storage_file, "w", encoding="utf-8") as f:
             json.dump(self.students, f, ensure_ascii=False, indent=4)
 
     def generate_next_id(self) -> str:
-        """Tự động tạo mã SV tiếp theo dạng SV001, SV002,..."""
         if not self.students:
             return "SV001"
         
@@ -37,14 +34,12 @@ class StudentService:
         return f"SV{max_num + 1:03d}"
 
     def get_existing_emails(self, ignore_id: str = None) -> set:
-        """Lấy danh sách email hiện có."""
         return {
             s['email'] for s in self.students.values() 
             if ignore_id is None or s.get('student_id') != ignore_id
         }
 
     def add_student_auto_id(self, name: str, email: str, age) -> tuple[bool, str, str]:
-        """Thêm sinh viên mới với mã SV tự động tạo."""
         name = name.strip()
         email = email.strip()
 
@@ -72,7 +67,6 @@ class StudentService:
         return True, f"Thêm thành công sinh viên: {name} với mã tự động [{auto_id}]", auto_id
 
     def update_student(self, student_id: str, name: str = None, email: str = None, age = None) -> tuple[bool, str]:
-        """Sửa thông tin sinh viên."""
         student_id = student_id.strip()
         if student_id not in self.students:
             return False, f"Không tìm thấy sinh viên có mã '{student_id}'"
@@ -101,7 +95,6 @@ class StudentService:
         return True, f"Cập nhật thành công thông tin cho sinh viên {student_id}"
 
     def delete_student(self, student_id: str) -> tuple[bool, str]:
-        """Xóa sinh viên khỏi file JSON."""
         student_id = student_id.strip()
         if student_id in self.students:
             name = self.students[student_id].get('name', '')
