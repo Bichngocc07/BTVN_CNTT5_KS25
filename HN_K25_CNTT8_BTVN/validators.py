@@ -1,7 +1,6 @@
 import re
 
 def is_valid_student_id(student_id: str, existing_ids: set = None) -> tuple[bool, str]:
-    """Kiểm tra mã sinh viên: Định dạng SVxxx, không rỗng, không trùng."""
     student_id = student_id.strip()
     if not student_id:
         return False, "Mã sinh viên không được để rỗng!"
@@ -15,13 +14,11 @@ def is_valid_student_id(student_id: str, existing_ids: set = None) -> tuple[bool
     return True, ""
 
 def is_valid_name(name: str) -> tuple[bool, str]:
-    """Kiểm tra tên sinh viên."""
     if not name or not name.strip():
         return False, "Tên sinh viên không được để rỗng hoặc chỉ chứa khoảng trắng!"
     return True, ""
 
 def is_valid_email(email: str, existing_emails: set = None) -> tuple[bool, str]:
-    """Kiểm tra email hợp lệ và kiểm tra trùng lặp."""
     email = email.strip()
     if not email:
         return False, "Email không được để rỗng!"
@@ -35,7 +32,6 @@ def is_valid_email(email: str, existing_emails: set = None) -> tuple[bool, str]:
     return True, ""
 
 def is_valid_age(age_input) -> tuple[bool, str, int | None]:
-    """Kiểm tra tuổi từ 18 đến 60."""
     try:
         age = int(age_input)
         if age < 18 or age > 60:
