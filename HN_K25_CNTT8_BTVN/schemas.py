@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Optional
 
-# --- SCHEMAS MYSQL (POST / GET) ---
 class StudentMySQLCreate(BaseModel):
     student_code: str = Field(..., description="Mã sinh viên (VD: SV001)")
     student_name: str = Field(..., description="Họ và tên")
@@ -30,7 +29,6 @@ class StudentMySQLResponse(BaseModel):
     class Config:
         from_attributes = True  # Đọc dữ liệu từ SQLAlchemy ORM Model
 
-# --- SCHEMAS IN-MEMORY (MÃ CŨ) ---
 class StudentCreate(BaseModel):
     student_code: str = Field(..., description="Mã sinh viên")
     full_name: str = Field(..., description="Họ và tên")
