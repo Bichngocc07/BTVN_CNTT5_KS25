@@ -1,113 +1,90 @@
-import json
-import os
-from validators import is_valid_name, is_valid_email, is_valid_age
-
-class StudentService:
-    def __init__(self, storage_file="students.json"):
-        self.storage_file = storage_file
-        self.students = {}
-        self.load_data()
-
-    def load_data(self):
-        if os.path.exists(self.storage_file):
-            try:
-                with open(self.storage_file, "r", encoding="utf-8") as f:
-                    self.students = json.load(f)
-            except json.JSONDecodeError:
-                self.students = {}
-
-    def save_data(self):
-        with open(self.storage_file, "w", encoding="utf-8") as f:
-            json.dump(self.students, f, ensure_ascii=False, indent=4)
-
-    def generate_next_id(self) -> str:
-        if not self.students:
-            return "SV001"
+@staticmethod
+    def update_student(db: Session, student_id: int, student_in: StudentUpdatePUT) -> models.StudentModel:
+        student = db.query(models.StudentModel).filter(models.StudentModel.id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy sinh viên có ID = {student_id} trong CSDL!"
+            )
         
-        max_num = 0
-        for s_id in self.students.keys():
-            if s_id.startswith("SV") and s_id[2:].isdigit():
-                num = int(s_id[2:])
-                if num > max_num:
-                    max_num = num
+        email = str(student_in.email).strip()
+
+        # Kiểm tra trùng email với sinh viên khác
+        existing_email = db.query(models.StudentModel).filter(
+            models.StudentModel.email == email, 
+            models.StudentModel.id != student_id
+        ).first()
+        if existing_email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email '{email}' đã được sử dụng!")
+
+        student.student_name = student_in.full_name.strip()
+        student.email = email
+        student.age = student_in.age
+        student.is_active = student_in.is_active
+
+        db.commit()
+        db.refresh(student)
+        return student
+
+    @staticmethod
+    def patch_student(db: Session, student_id: int, update_data: dict) -> models.StudentModel:
+        student = db.query(models.StudentModel).filter(models.StudentModel.id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy sinh viên có ID = {student_id} trong CSDL!"
+            )
+
+        if "email" in update_data and update_data["email"] is not None:
+            new_email = str(update_data["email"]).strip()
+            existing_email = db.query(models.StudentModel).filter(
+                models.StudentModel.email == new_email, 
+                models.StudentModel.id != student_id
+            ).first()
+            if existing_email:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Email '{new_email}' đã được sử dụng!")
+            update_data["email"] = new_email
+
+        if "full_name" in update_data and update_data["full_name"] is not None:
+            update_data["student_name"] = update_data.pop("full_name").strip()
+
+        for key, value in update_data.items():
+            if value is not None:
+                setattr(student, key, value)
+
+        db.commit()
+        db.refresh(student)
+        return student
+
+    @staticmethod
+    def delete_student(db: Session, student_id: int):
+        student = db.query(models.StudentModel).filter(models.StudentModel.id == student_id).first()
+        if not student:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy sinh viên có ID = {student_id} trong CSDL!"
+            )
+        db.delete(student)
+        db.commit()
+        return {"message": f"Đã xóa thành công sinh viên ID {student_id}", "student_id": student_id}
+
+    @staticmethod
+    def search_students(db: Session, keyword: str = None, min_age: int = None, max_age: int = None):
+        query = db.query(models.StudentModel)
         
-        return f"SV{max_num + 1:03d}"
-
-    def get_existing_emails(self, ignore_id: str = None) -> set:
-        return {
-            s['email'] for s in self.students.values() 
-            if ignore_id is None or s.get('student_id') != ignore_id
-        }
-
-    def add_student_auto_id(self, name: str, email: str, age) -> tuple[bool, str, str]:
-        name = name.strip()
-        email = email.strip()
-
-        valid_name, msg_name = is_valid_name(name)
-        if not valid_name: return False, msg_name, ""
-
-        valid_email, msg_email = is_valid_email(email, self.get_existing_emails())
-        if not valid_email: return False, msg_email, ""
-
-        valid_age, msg_age, parsed_age = is_valid_age(age)
-        if not valid_age: return False, msg_age, ""
-
-        auto_id = self.generate_next_id()
-
-        self.students[auto_id] = {
-            "student_id": auto_id,
-            "student_code": auto_id,
-            "name": name,
-            "full_name": name,
-            "email": email,
-            "age": parsed_age,
-            "is_active": True
-        }
-        self.save_data()
-        return True, f"Thêm thành công sinh viên: {name} với mã tự động [{auto_id}]", auto_id
-
-    def update_student(self, student_id: str, name: str = None, email: str = None, age = None) -> tuple[bool, str]:
-        student_id = student_id.strip()
-        if student_id not in self.students:
-            return False, f"Không tìm thấy sinh viên có mã '{student_id}'"
-
-        student = self.students[student_id]
-
-        if name is not None:
-            name = name.strip()
-            valid_name, msg_name = is_valid_name(name)
-            if not valid_name: return False, msg_name
-            student['name'] = name
-            student['full_name'] = name
-
-        if email is not None:
-            email = email.strip()
-            valid_email, msg_email = is_valid_email(email, self.get_existing_emails(ignore_id=student_id))
-            if not valid_email: return False, msg_email
-            student['email'] = email
-
-        if age is not None:
-            valid_age, msg_age, parsed_age = is_valid_age(age)
-            if not valid_age: return False, msg_age
-            student['age'] = parsed_age
-
-        self.save_data()
-        return True, f"Cập nhật thành công thông tin cho sinh viên {student_id}"
-
-    def delete_student(self, student_id: str) -> tuple[bool, str]:
-        student_id = student_id.strip()
-        if student_id in self.students:
-            name = self.students[student_id].get('name', '')
-            del self.students[student_id]
-            self.save_data()
-            return True, f"Đã xóa sinh viên {name} ({student_id})"
-        return False, f"Không tìm thấy sinh viên có mã '{student_id}'"
-
-    def get_all_students(self) -> list:
-        return list(self.students.values())
-
-    def find_by_id(self, student_id: str) -> dict | None:
-        return self.students.get(student_id.strip())
-
-    def filter_by_age(self, min_age: int, max_age: int) -> list:
-        return [s for s in self.students.values() if min_age <= s['age'] <= max_age]
+        # Tìm kiếm theo từ khóa (Mã SV, Tên hoặc Email)
+        if keyword:
+            search_pattern = f"%{keyword}%"
+            query = query.filter(
+                (models.StudentModel.student_code.ilike(search_pattern)) |
+                (models.StudentModel.student_name.ilike(search_pattern)) |
+                (models.StudentModel.email.ilike(search_pattern))
+            )
+        
+        # Lọc theo khoảng tuổi
+        if min_age is not None:
+            query = query.filter(models.StudentModel.age >= min_age)
+        if max_age is not None:
+            query = query.filter(models.StudentModel.age <= max_age)
+            
+        return query.all()
