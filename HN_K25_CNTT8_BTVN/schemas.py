@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, EmailStr, field_validator
-from typing import Optional
+from typing import Optional, List
 
+# --- SCHEMAS MYSQL (CREATE / UPDATE / RESPONSE) ---
 class StudentMySQLCreate(BaseModel):
     student_code: str = Field(..., description="Mã sinh viên (VD: SV001)")
     student_name: str = Field(..., description="Họ và tên")
@@ -17,6 +18,22 @@ class StudentMySQLCreate(BaseModel):
             raise ValueError('Trường này không được để rỗng hoặc chỉ chứa khoảng trắng')
         return v
 
+class StudentMySQLUpdate(BaseModel):
+    student_name: Optional[str] = Field(None, description="Họ và tên")
+    email: Optional[EmailStr] = Field(None, description="Email hợp lệ")
+    age: Optional[int] = Field(None, ge=18, le=60, description="Tuổi từ 18 đến 60")
+    phone_number: Optional[str] = Field(None, description="Số điện thoại")
+    is_active: Optional[bool] = Field(None, description="Trạng thái hoạt động")
+
+    @field_validator('student_name')
+    @classmethod
+    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v = v.strip()
+            if not v:
+                raise ValueError('Tên không được để rỗng')
+        return v
+
 class StudentMySQLResponse(BaseModel):
     id: int
     student_code: str
@@ -27,8 +44,17 @@ class StudentMySQLResponse(BaseModel):
     is_active: bool
 
     class Config:
-        from_attributes = True  # Đọc dữ liệu từ SQLAlchemy ORM Model
+        from_attributes = True
 
+# Schema trả về kết quả Search/Filter kèm Phân trang
+class PaginatedStudentResponse(BaseModel):
+    total: int
+    page: int
+    limit: int
+    total_pages: int
+    data: List[StudentMySQLResponse]
+
+# --- SCHEMAS IN-MEMORY (CŨ) ---
 class StudentCreate(BaseModel):
     student_code: str = Field(..., description="Mã sinh viên")
     full_name: str = Field(..., description="Họ và tên")
